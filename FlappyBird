@@ -1,0 +1,254 @@
+#include <iostream>
+#include <windows.h>
+#include <math.h>
+#include <time.h>
+#include <conio.h>
+
+using namespace std;
+
+//Cursor position on the console
+void goToXY(int x, int y) {
+    COORD coord = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+const int hurdleCount = 4; //Number of hurdles
+
+class FlappyBird {
+    int hurdlePositions[hurdleCount][2]; //Positions of hurdles
+    int screenWidth = 80;
+    int screenHeight = 25;
+    int hurdleGapHeight = 8;
+    int gapBetweenHurdles;
+
+    int birdX = 17;
+    int birdY = 15;
+
+    int jumpHeight = 4;
+    int score = 0;
+    bool passedHurdle[hurdleCount]; //Track if a hurdle is passed
+
+public:
+    //Constructor to initialize the game
+    FlappyBird() {
+        srand(time(NULL));
+        gapBetweenHurdles = (screenWidth / hurdleCount) + 10;
+        for (int i = 0; i < hurdleCount; i++) {
+            hurdlePositions[i][0] = gapBetweenHurdles * (i + 1);
+
+            int breakPosition = rand() % (screenHeight / 3) + hurdleGapHeight;
+            hurdlePositions[i][1] = breakPosition;
+            passedHurdle[i] = false; //Initialize as not passed
+        }
+    }
+
+    //Prints the hurdles
+    void printHurdles() {
+        int gapCounter = 0;
+        for (int i = 0; i < hurdleCount; i++) {
+            for (int j = 0; j < screenHeight; j++) {
+
+                if (hurdlePositions[i][1] == j) gapCounter = hurdleGapHeight;
+
+                if (gapCounter == 0) {
+                    if (hurdlePositions[i][0] < screenWidth) {
+                        goToXY(hurdlePositions[i][0] + 1, j);
+                        cout << " ";
+
+                        goToXY(hurdlePositions[i][0], j);
+                        cout << i;
+                    }
+                }
+                else {
+                    if ((gapCounter == 1 || gapCounter == hurdleGapHeight) && hurdlePositions[i][0] < screenWidth) {
+                        if (hurdlePositions[i][0] + 1 > 0) {
+                            goToXY(hurdlePositions[i][0] + 1, j);
+                            cout << "   ";
+                        }
+
+                        if (hurdlePositions[i][0] - 1 > 0) {
+                            goToXY(hurdlePositions[i][0] - 1, j);
+                            cout << "===";
+                        }
+                    }
+
+                    gapCounter--;
+                }
+            }
+
+            hurdlePositions[i][0]--;
+
+            if (hurdlePositions[i][0] == -1) {
+                int previousIndex;
+                if (i == 0)
+                    previousIndex = hurdleCount - 1;
+                else
+                    previousIndex = i - 1;
+
+                hurdlePositions[i][0] = hurdlePositions[previousIndex][0] + gapBetweenHurdles;
+
+                int breakPosition = rand() % (screenHeight / 3) + hurdleGapHeight;
+                hurdlePositions[i][1] = breakPosition;
+                passedHurdle[i] = false; //Reset the passed status for the new hurdle
+
+                for (int i = 0; i < screenHeight; i++) {
+                    goToXY(0, i);
+                    cout << " ";
+                }
+            }
+        }
+    }
+
+    //Checks for collisions 
+    bool collisionCheck() {
+        if (birdY == 0 || birdY + 3 == screenHeight) return true;
+
+        for (int i = 0; i < hurdleCount; i++) {
+            if (
+                hurdlePositions[i][0] == birdX &&
+                (
+                    birdY <= hurdlePositions[i][1] ||
+                    birdY + 2 >= hurdlePositions[i][1] + hurdleGapHeight
+                    )
+                ) {
+                return true;
+            }
+
+            if (hurdlePositions[i][0] < birdX && !passedHurdle[i] &&
+                birdY > hurdlePositions[i][1] && birdY < hurdlePositions[i][1] + hurdleGapHeight) {
+                score++;
+                passedHurdle[i] = true;
+            }
+
+            if (hurdlePositions[i][0] >= birdX - 5 &&
+                hurdlePositions[i][0] <= birdX &&
+                (
+                    birdY <= hurdlePositions[i][1] ||
+                    birdY + 2 >= hurdlePositions[i][1] + hurdleGapHeight
+                    )
+                ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //Clear the bird's previous position
+    void clearBird() {
+        goToXY(birdX - 5, birdY);
+        cout << "   ";
+        goToXY(birdX - 5, birdY + 1);
+        cout << "      ";
+        goToXY(birdX - 5, birdY + 2);
+        cout << "       ";
+    }
+
+    //Prints score
+    void printScore() {
+        goToXY(0, screenHeight + 4);
+        cout << "Score: " << score;
+    }
+
+    //Print the bird
+    void printBird() {
+        goToXY(birdX - 5, birdY);       cout << " __";
+        goToXY(birdX - 5, birdY + 1);   cout << "/-/o\\";
+        goToXY(birdX - 5, birdY + 2);   cout << "\\_\\-/";
+    }
+
+    //Prints the road
+    void printRoad() {
+        for (int i = 0; i <= screenWidth; i++) {
+            goToXY(i, screenHeight);      cout << "_";
+            goToXY(i, screenHeight + 1);  cout << "/";
+            goToXY(i, screenHeight + 2);  cout << "=";
+        }
+    }
+
+    // Start screen display
+    void displayStartScreen() {
+        system("cls");
+        cout << "Welcome to Flappy Bird!" << endl;
+        cout << "\nRules:" << endl;
+        cout << "1. Avoid the hurdles or 'walls'." << endl;
+        cout << "2. Gain points by passing in between the hurdles." << endl;
+        cout << "3. The game is over if you hit a hurdle or the ground." << endl;
+        cout << "\nThe goal is to see how many hurdles you can pass through. Good Luck!" << endl;
+        cout << "\nControls:" << endl;
+        cout << "Press SPACE to jump." << endl;
+        cout << "\nPress Y to start the game or N to exit." << endl;
+    }
+
+    //Initialize game settings for replay
+    void initializeGame() {
+        birdX = 17;
+        birdY = 15;
+        score = 0;
+        gapBetweenHurdles = (screenWidth / hurdleCount) + 10;
+        for (int i = 0; i < hurdleCount; i++) {
+            hurdlePositions[i][0] = gapBetweenHurdles * (i + 1);
+
+            int breakPosition = rand() % (screenHeight / 3) + hurdleGapHeight;
+            hurdlePositions[i][1] = breakPosition;
+            passedHurdle[i] = false; //Reset the passed status for replay
+        }
+    }
+
+    //Main game loop
+    void play() {
+        initializeGame();
+        printRoad();
+        while (true) {
+            if (GetAsyncKeyState(VK_SPACE)) {
+                birdY -= jumpHeight;
+            }
+
+            printHurdles();
+            printBird();
+            printScore();
+
+            if (collisionCheck()) break;
+
+            Sleep(200); //inc = slower
+            clearBird();
+            birdY += 1;
+        }
+    }
+};
+
+//Main function to start the game
+int main() {
+    FlappyBird fbGame;
+
+    fbGame.displayStartScreen();
+    char startChoice;
+    cin >> startChoice;
+    if (startChoice == 'N' || startChoice == 'n') {
+        return 0; //Exit the game
+    }
+
+    while (true) {
+        system("cls"); //Clear the screen before starting the game
+        fbGame.play();
+        goToXY(30, 30);
+        cout << "\nDo you want to play again? (Y/N)";
+
+        char replayChoice;
+        cin >> replayChoice;
+        if (replayChoice == 'N' || replayChoice == 'n') {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+/*
+Test Cases:
+    Basic Gameplay
+    Edge Case - Min/Max screen
+    Collision Test
+    Score Tracking
+    Replay functionality
+    Performance Test
+*/
