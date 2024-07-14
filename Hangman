@@ -1,0 +1,190 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <ctime>
+#include <cstdlib>
+#include <cctype>
+
+using namespace std;
+
+class HangmanGame {
+private:
+    vector<string> words; // Holds the default list
+    const int maxAttempts = 6;
+    string secretWord;
+    string guessedWord;
+    int attemptsLeft;
+    vector<char> guessedLetters;
+    int hangmanProgress;
+
+public:
+    HangmanGame(const vector<string>& customWords) {
+        // Ability to import a list
+        if (customWords.empty()) {
+            // The default list of words
+            words = {
+                "ALGORITHM", "PROGRAMMING", "DATABASE", "BINARY", "COMPILER",
+                "FUNCTION", "VARIABLE", "FRAMEWORK", "ENCRYPTION", "INTERFACE",
+                "DEBUGGING", "SEMAPHORE", "MULTITHREAD", "NETWORKING", "POINTER",
+                "STACK", "QUEUE", "HEAP", "RECURSION", "ARTIFICIAL",
+                "INHERITANCE", "POLYMORPHISM", "ABSTRACTION", "ENCAPSULATION",
+                "OPERATING SYSTEM", "CONCURRENCY", "ASSEMBLY", "SYNTAX",
+                "CLOUD COMPUTING", "ANALYSIS", "HASH", "BINARY DATA",
+                "JAVASCRIPT", "PROLOG", "BASH SHELL", "RUBY",
+                "HTML", "CSS", "SQL", "PYTHON", "JAVA", "RUST",
+                "LISP", "USER INTERFACE", "USER EXPERIENCE", "TESTING", "STATIC", "DYNAMIC"
+                "COMPUTER", "SOFTWARE","DATA SCIENCE", "CYBER SECURITY", "SOFTWARE ENGINEER", "NERDS"
+            };
+        }
+        else {
+            words = customWords;
+        }
+
+        srand(time(0));
+        secretWord = words[rand() % words.size()];
+        guessedWord = string(secretWord.length(), '_');
+        for (int i = 0; i < secretWord.length(); ++i) {
+            if (secretWord[i] == ' ') {
+                guessedWord[i] = ' ';
+            }
+        }
+        attemptsLeft = maxAttempts;
+        hangmanProgress = 0;
+    }
+
+    void play() {
+        cout << "Welcome to Hangman!" << endl;
+        cout << "Guess the secret word by entering letters. The topic for this hangman is revolved around computer science!" << endl;
+
+        while (attemptsLeft > 0 && guessedWord != secretWord) {
+            displayGameStatus();
+
+            char guess;
+            cout << "Enter your guess: ";
+            cin >> guess;
+            guess = toupper(guess);
+
+            if (!isalpha(guess)) {
+                cout << "Invalid input! Please enter a letter." << endl;
+                continue;
+            }
+
+            if (letterGuessed(guess)) {
+                cout << "You already guessed '" << guess << "'." << endl;
+                continue;
+            }
+
+            guessedLetters.push_back(guess);
+
+            if (updateGuessedWord(guess)) {
+                cout << "Correct guess!" << endl;
+            }
+            else {
+                cout << "Incorrect guess." << endl;
+                attemptsLeft--;
+                hangmanProgress++;
+            }
+        }
+
+        displayGameStatus();
+
+        if (guessedWord == secretWord) {
+            cout << "Congratulations! You guessed the word \"" << secretWord << "\" correctly." << endl;
+        }
+        else {
+            cout << "You've run out of attempts. The word was \"" << secretWord << "\"." << endl;
+            displayHangman();
+        }
+
+        char playAgain;
+        do {
+            cout << "Do you want to play again? (Y/N): ";
+            cin >> playAgain;
+            playAgain = toupper(playAgain);
+            if (playAgain != 'Y' && playAgain != 'N') {
+                cout << "Please enter Y/N." << endl;
+            }
+        } while (playAgain != 'Y' && playAgain != 'N');
+
+        if (playAgain == 'Y') {
+            resetGame();
+            play();
+        }
+        else {
+            cout << "Thanks for playing Hangman!" << endl;
+        }
+    }
+
+private:
+    void displayGameStatus() {
+        cout << "Attempts left: " << attemptsLeft << endl;
+        cout << "Guessed letters: ";
+        for (char letter : guessedLetters) {
+            cout << letter << " ";
+        }
+        cout << endl;
+        cout << "Current word: ";
+        for (char letter : guessedWord) {
+            cout << letter << " ";
+        }
+        cout << endl;
+    }
+
+    bool letterGuessed(char guess) {
+        for (char letter : guessedLetters) {
+            if (letter == guess) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool updateGuessedWord(char guess) {
+        bool correctGuess = false;
+        for (int i = 0; i < secretWord.length(); i++) {
+            if (secretWord[i] == guess) {
+                guessedWord[i] = guess;
+                correctGuess = true;
+            }
+        }
+        return correctGuess;
+    }
+
+    void displayHangman() {
+        // Hangman art - shows when you lose
+        vector<string> hangmanArt = {
+            "  _________",
+            "  |/      |",
+            "  |      (_)",
+            "  |      \\|/",
+            "  |       |",
+            "  |      / \\",
+            "  |",
+            "__|___"
+        };
+        for (int i = 0; i <= hangmanProgress; i++) {
+            cout << hangmanArt[i] << endl;
+        }
+    }
+
+    void resetGame() {
+        srand(time(0));
+        secretWord = words[rand() % words.size()];
+        guessedWord = string(secretWord.length(), '_');
+        for (int i = 0; i < secretWord.length(); ++i) {
+            if (secretWord[i] == ' ') {
+                guessedWord[i] = ' ';
+            }
+        }
+        attemptsLeft = maxAttempts;
+        guessedLetters.clear();
+        hangmanProgress = 0;
+    }
+};
+
+int main() {
+    vector<string> customWords; // Custom word list
+    HangmanGame game(customWords);
+    game.play();
+    return 0;
+}
